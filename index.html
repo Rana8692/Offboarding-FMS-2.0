@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offboarding FMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        #entranceAnimationOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+        #entranceAnimationOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(79, 70, 229, 0.3);
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-text {
+            margin-top: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #374151;
+            animation: fadeInOut 2s infinite ease-in-out;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes modalPopup {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .modal-content.modal-popup-active {
+            animation: modalPopup 0.4s ease-out forwards;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+        }
+        .modal-content-wrapper {
+            /* Wrapper can be used for additional styling if needed, but centering is on .modal */
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 1rem;
+            border: 1px solid #d1d5db;
+            width: 90%; /* Fallback for very small screens */
+            max-width: 95vw; /* Ensure it doesn't exceed viewport width on very small screens */
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            position: relative;
+            transform: scale(1);
+            opacity: 1;
+            max-height: calc(90vh - 1rem);
+            overflow-y: auto;
+        }
+
+        @media (min-width: 500px) {
+            .modal-content {
+                width: 75vw;
+            }
+        }
+
+        #addEntrySectionModalOffboarding .modal-content,
+        #howToUseModalOffboarding .modal-content,
+        #doerInfoModalOffboarding .modal-content,
+        #stageActionModalOffboarding .modal-content,
+        #googleFormActionModalOffboarding .modal-content,
+        #backendLoginModal .modal-content { /* Added backendLoginModal */
+            max-width: 850px;
+        }
+        #entryDetailsModalOffboarding .modal-content {
+            max-width: 1000px;
+        }
+        #messageAlertModalOffboarding .modal-content,
+        #stageActionModalOffboarding .modal-content,
+        #backendLoginModal .modal-content { /* Added backendLoginModal */
+            width: auto;
+            max-width: 550px;
+        }
+         #googleFormActionModalOffboarding .modal-content {
+             padding: 5px;
+        }
+        #backendLoginModal .modal-content { /* Specific for login modal */
+            max-width: 400px;
+        }
+
+
+        @media (min-width: 640px) {
+            .modal-content {
+                padding: 1.5rem;
+                max-height: calc(90vh - 3rem);
+            }
+            #messageAlertModalOffboarding .modal-content,
+            #stageActionModalOffboarding .modal-content,
+            #backendLoginModal .modal-content { /* Added backendLoginModal */
+                padding: 1.5rem;
+            }
+        }
+        @media (min-width: 768px) {
+             .modal-content {
+                padding: 25px;
+            }
+        }
+
+
+        #addEntrySectionModalOffboarding .modal-content {
+             padding: 5px;
+        }
+        #googleFormIframeOffboarding, #googleFormActionIframeOffboarding {
+            width: 100%;
+            height: calc(85vh - 70px);
+            border: none;
+        }
+
+        .close-button {
+            color: #6b7280; position: absolute; top: 0.5rem; right: 0.75rem;
+            font-size: 1.875rem; font-weight: bold; transition: color 0.2s;
+            line-height: 1;
+            z-index: 10;
+            padding: 0.25rem;
+        }
+         @media (min-width: 640px) {
+            .close-button {
+                top: 10px; right: 15px;
+            }
+        }
+        #addEntrySectionModalOffboarding .close-button,
+        #googleFormActionModalOffboarding .close-button {
+            top: 8px; right: 10px;
+            font-size: 1.5rem;
+            background-color: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        .modal-controls-group {
+            position: absolute;
+            top: 0.5rem; right: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            z-index: 10;
+        }
+        @media (min-width: 640px) {
+            .modal-controls-group {
+                top: 12px; right: 15px;
+                gap: 6px;
+            }
+        }
+
+        .modal-control-button {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+        }
+        .modal-control-button svg {
+            width: 1rem;
+            height: 1rem;
+            display: block;
+        }
+        .modal-control-button.close-btn svg { fill: #9ca3af; }
+        .modal-control-button.close-btn:hover svg { fill: #374151; }
+        .modal-control-button:hover { background-color: #e5e7eb; }
+        .modal-control-button.sync-btn svg { fill: #9ca3af; }
+        .modal-control-button.sync-btn:hover svg { fill: #4f46e5; }
+
+
+        .table-container::-webkit-scrollbar { width: 8px; height: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #555; }
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.375rem; font-weight: 500;
+            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.1s ease;
+            cursor: pointer; text-align: center; display: inline-flex;
+            align-items: center; justify-content: center;
+            min-height: 44px;
+        }
+        @media (min-width: 640px) {
+            .btn {
+                padding: 0.75rem 1.5rem;
+            }
+        }
+        .btn svg { margin-right: 0.5rem; margin-left: -0.25rem; }
+        .btn-icon-only svg { margin-right: 0; margin-left: 0; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover { background-color: #4338ca; box-shadow: 0 4px 14px 0 rgba(79,70,229,0.39); }
+        .btn-secondary { background-color: #e5e7eb; color: #374151; }
+        .btn-secondary:hover { background-color: #d1d5db; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover { background-color: #059669; }
+        .btn-warning { background-color: #f59e0b; color: white; }
+        .btn-warning:hover { background-color: #d97706; }
+        .btn-info { background-color: #3b82f6; color: white; }
+        .btn-info:hover { background-color: #2563eb; }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-danger:hover { background-color: #b91c1c; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 1rem; }
+        @media (min-width: 768px) {
+            .form-grid { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+            .form-grid .col-span-2 { grid-column: span 2 / span 2; }
+        }
+
+        .delay-ontime { color: #10b981; font-weight: 500; }
+        .delay-late { color: #dc2626; font-weight: 500; }
+        .delay-early { color: #3b82f6; font-weight: 500; }
+        .overdue-task { color: #dc2626; font-weight: bold; }
+
+        #entryDetailsModalOffboarding .crm-card { background: #fff; }
+        #entryDetailsModalOffboarding .crm-card h2 { margin-bottom: 1rem; font-size: 1.125rem; sm:font-size: 1.25rem; color: #2c3e50; font-weight: 600; }
+        #entryDetailsModalOffboarding .crm-section-row { display: flex; flex-direction: column; sm:flex-row; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+        #entryDetailsModalOffboarding .crm-section { flex: 1 1 100%; sm:flex: 1 1 300px; border-radius: 8px; border: 1px solid #e0e0e0; background-color: var(--section-bg, rgba(200,200,200,0.1)); font-size: 0.8rem; sm:font-size: 13px; min-width: 280px; }
+        #entryDetailsModalOffboarding .crm-section-header { padding: 0.5rem 0.75rem; sm:padding: 8px 12px; font-weight: 700; font-size: 0.875rem; sm:font-size: 14px; display: flex; align-items: center; gap: 0.5rem; sm:gap: 8px; color: white; background-color: var(--section-color, #777); border-top-left-radius: 7px; border-top-right-radius: 7px;}
+        #entryDetailsModalOffboarding .crm-section-header svg { width: 0.875rem; height: 0.875rem; sm:width: 16px; sm:height: 16px; fill: white;}
+        #entryDetailsModalOffboarding .crm-section-content { padding: 0.625rem 0.75rem; sm:padding: 10px 12px; border-bottom-left-radius: 7px; border-bottom-right-radius: 7px;}
+        #entryDetailsModalOffboarding .crm-description-item { margin-bottom: 0.5rem; }
+        #entryDetailsModalOffboarding .crm-description-item:last-child { margin-bottom: 0; }
+        #entryDetailsModalOffboarding .crm-label { font-weight: 600; color: #555; font-size: 0.75rem; sm:font-size: 0.8rem; margin-bottom: 2px;}
+        #entryDetailsModalOffboarding .crm-value { font-size: 0.8rem; sm:font-size: 0.9rem; color: #222; word-break: break-word;}
+        #entryDetailsModalOffboarding .crm-status-banner { background-color: #fff3cd; color: #856404; padding: 0.625rem 0.75rem; sm:padding: 10px 12px; border-radius: 8px; font-weight: 700; text-align: center; margin-top: 1.25rem; font-size: 0.875rem; sm:font-size: 14px;}
+
+        .details-section { background-color: #f9fafb; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1.25rem; border: 1px solid #e5e7eb;}
+        .details-section h3 { font-size: 1rem; sm:font-size: 1.125rem; font-weight: 600; color: #4f46e5; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #6366f1; }
+        .timeline-step { padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.375rem; margin-bottom: 0.75rem; background-color: #fff;}
+        .timeline-step strong { color: #4338ca; font-size: 0.9rem; sm:font-size: 1rem; display: block; margin-bottom: 0.25rem;}
+        .timeline-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); sm:grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;}
+        .timeline-details-grid .details-item { padding: 0.1rem 0; margin-bottom: 0.1rem;}
+        .timeline-details-grid .details-label { font-size: 0.75rem; sm:font-size: 0.8rem; }
+        .timeline-details-grid .details-value { font-size: 0.8rem; sm:font-size: 0.85rem; }
+        .timeline-step .btn-take-action { margin-top: 0.75rem; padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+        .timeline-step .action-button-group { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }
+
+        .scorecard-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); sm:grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; sm:gap: 1rem; margin-bottom: 1.5rem; sm:margin-bottom: 2rem;}
+        .scorecard { background-color: white; padding: 1rem; sm:padding: 1.25rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); text-align: center;}
+        .scorecard-title { font-size: 0.75rem; sm:font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem; sm:margin-bottom: 0.5rem; font-weight: 500; }
+        .scorecard-value { font-size: 1.875rem; sm:font-size: 2.25rem; font-weight: 700; color: #1f2937; }
+
+        .scorecard.total-resignations .scorecard-value { color: #ef4444; } /* Red for total resignations */
+        .scorecard.pending-exit-interview .scorecard-value { color: #f59e0b; } /* Amber for exit interview */
+        .scorecard.pending-fnf .scorecard-value { color: #84cc16; } /* Lime for FNF */
+        .scorecard.completed-separations .scorecard-value { color: #10b981; } /* Green for completed */
+
+
+        .status-badge {
+            padding: 0.25em 0.6em;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            sm:font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+            min-width: 100px;
+            sm:min-width: 120px;
+            color: white;
+        }
+        .status-pending-reason-clarification { background-color: #fbbf24; color: #78350f; } /* Amber */
+        .status-pending-exit-interview { background-color: #a3e635; color: #3f6212; } /* Lime */
+        .status-pending-resignation-approval { background-color: #60a5fa; color: #1e3a8a; } /* Blue */
+        .status-pending-role-transfer { background-color: #c084fc; color: #581c87; } /* Purple */
+        .status-pending-asset-handover { background-color: #f472b6; color: #831843; } /* Pink */
+        .status-pending-documentation { background-color: #2dd4bf; color: #0f766e; } /* Teal */
+        .status-pending-fnf { background-color: #facc15; color: #713f12; } /* Yellow */
+        .status-fnf-completed { background-color: #34d399; color: #065f46; } /* Green */
+        .status-default { background-color: #9ca3af; color: white; } /* Gray for default/unknown */
+
+
+        .rotate-animate {
+            animation: rotateIcon 1s linear;
+        }
+        @keyframes rotateIcon {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .main-content-area {
+            flex-grow: 1;
+            padding: 0.75rem;
+        }
+         @media (min-width: 640px) {
+            .main-content-area {
+                padding: 1.5rem;
+            }
+        }
+        @media (min-width: 768px) {
+            .main-content-area {
+                padding: 2rem;
+            }
+        }
+
+
+        @media screen and (max-width: 768px) {
+            .responsive-table thead { display: none; }
+            .responsive-table tr { display: block; margin-bottom: 0.625em; border-radius: 0.375rem; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06); border: 1px solid #e5e7eb;}
+            .responsive-table td {
+                display: block; text-align: right; font-size: 0.75rem;
+                border-bottom: 1px solid #e5e7eb; padding: 0.4rem 0.6rem !important;
+                padding-left: 42% !important;
+                position: relative;
+            }
+            .responsive-table td::before {
+                content: attr(data-label); position: absolute; left: 0.4rem;
+                width: 38%;
+                padding-right: 0.4rem;
+                white-space: nowrap; text-align: left; font-weight: 600; color: #4b5563;
+            }
+            .responsive-table td:last-child { border-bottom: 0; }
+            .responsive-table.doer-info-table td { padding-left: 30% !important; }
+            .responsive-table.doer-info-table td::before { width: 25%; }
+            .main-action-buttons button { width: 100%; margin-bottom: 0.5rem;}
+        }
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .filter-item {
+            flex-grow: 1;
+            min-width: 150px;
+        }
+         @media (min-width: 1024px) {
+            .filter-container {
+                flex-wrap: nowrap;
+            }
+            #searchInputContainerOffboarding {
+                flex-shrink: 0;
+                width: auto;
+            }
+            #filterControlsContainerOffboarding {
+                 flex-grow: 1;
+                 display: flex;
+                 flex-wrap: wrap;
+                 gap: 0.5rem;
+                 justify-content: flex-end;
+            }
+        }
+
+        /* Mobile Restriction Styles */
+        #mobileRestrictionOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f3f4f6;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000; /* Ensure it's on top of everything */
+            text-align: center;
+            padding: 2rem;
+        }
+        #mobileRestrictionOverlay .icon {
+            font-size: 4rem; /* Tailwind text-6xl */
+            color: #4f46e5; /* Indigo-600 */
+            margin-bottom: 1.5rem;
+        }
+        #mobileRestrictionOverlay .message {
+            font-size: 1.25rem; /* Tailwind text-xl */
+            font-weight: 600;
+            color: #374151; /* Gray-700 */
+            margin-bottom: 0.5rem;
+        }
+        #mobileRestrictionOverlay .sub-message {
+            font-size: 1rem; /* Tailwind text-base */
+            color: #6b7280; /* Gray-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="mobileRestrictionOverlay">
+        <div class="icon">🖥️</div>
+        <div class="message">Desktop View Recommended</div>
+        <div class="sub-message">Please open this FMS on a desktop browser for the best experience.</div>
+    </div>
+
+    <div id="fmsMainContainer"> <div id="entranceAnimationOverlay">
+            <div class="spinner"></div>
+            <p class="loading-text">Loading Offboarding FMS...</p>
+        </div>
+
+        <header class="sticky top-0 z-50 bg-white shadow-md">
+            <div class="container mx-auto px-2 sm:px-4 lg:px-8"> <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                            </svg>
+                        </div>
+                        <div class="ml-2 sm:ml-3">
+                            <p class="text-md sm:text-lg font-bold text-gray-800">Offboarding FMS</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 sm:space-x-4">
+                        <div class="hidden sm:block">
+                            <p id="dateTimeDisplayOffboarding" class="text-xs text-gray-500"></p>
+                        </div>
+
+                        <button id="syncButtonOffboarding" type="button" title="Sync Data" class="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            <span class="sr-only">Sync Data</span>
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                        </button>
+
+                        <button type="button" title="User Profile" class="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            <span class="sr-only">Open user menu</span>
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content-area container mx-auto max-w-7xl bg-white rounded-lg shadow-xl mt-4">
+            <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:flex-wrap justify-end gap-2 main-action-buttons">
+                <button id="openDoerInfoModalButtonOffboarding" class="btn btn-secondary text-sm w-full sm:w-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people-fill" viewBox="0 0 16 16">
+                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                    </svg>
+                    Responsibilities
+                </button>
+                <button id="openBackendDataButtonOffboarding" class="btn btn-secondary text-sm w-full sm:w-auto">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-database-fill-gear" viewBox="0 0 16 16">
+                        <path d="M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1"/>
+                        <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .021-.001.043-.003.064C13.486 7.153 12.006 7.5 8 7.5s-5.486-.347-6.997-.436A1.02 1.02 0 0 1 2 7m-1 7v-1c0-.021.001-.043.003-.064C1.514 12.847 2.994 12.5 6 12.5s4.486.347 5.997.436c.002.02.003.043.003.064v1a1.02 1.02 0 0 1-.003.064C11.486 13.153 10.006 13.5 7 13.5s-4.486-.347-5.997-.436A1.02 1.02 0 0 1 1 14m10.887-1.754C10.51 12.089 9.36 12 8 12s-2.51.089-3.887.246a.5.5 0 0 0-.113.034V10.5a.5.5 0 0 1 .113-.034C5.49 10.32 6.64 10.25 8 10.25s2.51.07 3.887.216a.5.5 0 0 1 .113.034v1.716a.5.5 0 0 0-.113-.034M15.777 11.1l-.82-.072A1.8 1.8 0 0 0 14.19 11H14v-.11c0-.081-.001-.16-.004-.238c-.103-.64-.393-1.22-.788-1.73A2.99 2.99 0 0 0 11.437 8c-.152.243-.29.505-.412.786A2.99 2.99 0 0 0 12.563 8c.152.243.29.505.412.786a2.99 2.99 0 0 0 1.025.974c.003.078.004.157.004.238V11h-.191c-.391-.03-.755-.166-1.058-.28A1.8 1.8 0 0 0 11.4 11.1l-.82.072a.5.5 0 1 0 .036.993l.82-.072c.14-.012.274-.003.393.047a.5.5 0 0 0 .253.286l.708.404a.5.5 0 0 0 .596-.044l.708-.404a.5.5 0 0 0 .253-.286c.118-.05.253-.059.393-.047l.82.072a.5.5 0 1 0 .036-.993zM8 16a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+                    </svg>
+                    Backend Data
+                </button>
+                <button id="openHowToUseModalButtonOffboarding" class="btn btn-secondary text-sm w-full sm:w-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-question-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M5.496 6.033h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286a.237.237 0 0 0 .241.247zm2.325 6.443c-.584 0-1.009-.394-1.009-.927 0-.552.425-.94 1.01-.94.609 0 1.028.388 1.028.94 0 .533-.42.927-1.029.927z"/>
+                    </svg>
+                    How to Use
+                </button>
+                <button id="openEntryFormModalButtonOffboarding" class="btn btn-primary text-sm w-full sm:w-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+                        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                    </svg>
+                    Initiate Offboarding
+                </button>
+            </div>
+
+            <section id="scorecardSectionOffboarding" class="mb-6 sm:mb-8">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-3 sm:mb-4">Offboarding Overview</h2>
+                <div class="scorecard-container">
+                    <div class="scorecard total-resignations"> <div class="scorecard-title">Total Active Resignations</div>
+                        <div class="scorecard-value" id="scorecardTotalResignations">0</div>
+                    </div>
+                    <div class="scorecard pending-exit-interview"> <div class="scorecard-title">Pending Exit Interview</div>
+                        <div class="scorecard-value" id="scorecardPendingExitInterview">0</div>
+                    </div>
+                    <div class="scorecard pending-fnf"> <div class="scorecard-title">Pending F&F Settlement</div>
+                        <div class="scorecard-value" id="scorecardPendingFNF">0</div>
+                    </div>
+                    <div class="scorecard completed-separations"> <div class="scorecard-title">Completed Separations</div>
+                        <div class="scorecard-value" id="scorecardCompletedSeparations">0</div>
+                    </div>
+                </div>
+            </section>
+
+
+            <div id="addEntrySectionModalOffboarding" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-gray-50">
+                    <span id="closeEntryFormModalButtonOffboarding" class="close-button">&times;</span>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-2 text-center">Initiate New Offboarding</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 text-center mb-3 sm:mb-4">Please submit new offboarding entries using your designated Google Form.</p>
+                    <iframe id="googleFormIframeOffboarding"
+                            src="YOUR_GOOGLE_FORM_URL_FOR_OFFBOARDING_HERE"
+                            frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+                    <p class="text-center text-xs text-red-500 mt-2">Note: Replace 'YOUR_GOOGLE_FORM_URL_FOR_OFFBOARDING_HERE' in the code with your actual form URL.</p>
+                </section>
+            </div></div>
+
+            <div id="doerInfoModalOffboarding" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-white">
+                    <span id="closeDoerInfoModalButtonOffboarding" class="close-button">&times;</span>
+                    <h1 class="text-xl sm:text-2xl font-bold text-red-600 mb-4 sm:mb-6">Offboarding FMS: Process Responsibilities</h1>
+                    <div class="space-y-4 sm:space-y-6 text-gray-700 text-xs sm:text-sm leading-relaxed">
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-md shadow">
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mb-2 flex items-center">
+                                <svg class="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 mr-2 sm:mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                Initiate Offboarding Entry
+                            </h2>
+                            <ul class="list-disc list-inside ml-6 sm:ml-10 space-y-1">
+                                <li><strong>Who:</strong> HR Team / Manager</li>
+                                <li><strong>How:</strong> Click on "Initiate Offboarding" button (opens Google Form - ensure URL is correct in the code)</li>
+                                <li><strong>When:</strong> Upon receiving resignation or decision to separate.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-md shadow">
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mb-2 flex items-center">
+                                <svg class="h-5 w-5 sm:h-6 sm:w-6 text-purple-500 mr-2 sm:mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                                Stage 1: Reason Clarification
+                            </h2>
+                            <ul class="list-disc list-inside ml-6 sm:ml-10 space-y-1">
+                                <li><strong>Who:</strong> HR / Manager</li>
+                                <li><strong>How:</strong> Discuss resignation with employee. Update FMS via "Take Action".</li>
+                                <li><strong>When:</strong> As per defined TAT from resignation.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-3 sm:p-4 rounded-md shadow">
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mb-2 flex items-center">
+                               <svg class="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 mr-2 sm:mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 00-2.25-2.25H3.375A2.25 2.25 0 001.125 9.75v1.5a2.25 2.25 0 002.25 2.25h.094m15.106-5.594a2.25 2.25 0 00-2.25-2.25h-.094m15.106 5.594v.448A2.25 2.25 0 0118.75 13.5h-.094m15.106-5.594A2.25 2.25 0 0018.75 9h-.094m0 3.75h.094a2.25 2.25 0 012.25 2.25v.448m0-5.594a2.25 2.25 0 01-2.25 2.25h-.094" /></svg>
+                                Stage 2: Exit Interview
+                            </h2>
+                            <ul class="list-disc list-inside ml-6 sm:ml-10 space-y-1">
+                                <li><strong>Who:</strong> HR Team</li>
+                                <li><strong>How:</strong> Conduct exit interview. Update FMS.</li>
+                                <li><strong>When:</strong> Before last working day.</li>
+                            </ul>
+                        </div>
+                         <div class="bg-gray-50 p-3 sm:p-4 rounded-md shadow">
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mb-2 flex items-center">
+                                <svg class="h-5 w-5 sm:h-6 sm:w-6 text-teal-500 mr-2 sm:mr-3 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
+                                Subsequent Stages (Resignation Approval, Role Transfer, Asset Handover, Documentation, F&F)
+                            </h2>
+                            <ul class="list-disc list-inside ml-6 sm:ml-10 space-y-1">
+                                <li><strong>Who:</strong> Respective Depts (Manager, IT, Admin, Finance, HR)</li>
+                                <li><strong>How:</strong> Complete tasks and update FMS via "Take Action".</li>
+                                <li><strong>When:</strong> As per defined timelines for each stage.</li>
+                            </ul>
+                        </div>
+                    </div>
+                     <div class="mt-6 sm:mt-8 text-right">
+                        <button type="button" id="okDoerInfoModalButtonOffboarding" class="btn btn-primary">OK</button>
+                    </div>
+                </section>
+            </div></div>
+
+            <div id="entryDetailsModalOffboarding" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-white">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-1 mt-6 sm:mt-8" id="detailsModalTitleOffboarding">Offboarding Details</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6" id="detailsModalSubtitleOffboarding"></p>
+                    <div id="detailsModalContentOffboarding"></div>
+                </section>
+            </div></div>
+
+            <div id="howToUseModalOffboarding" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-white">
+                    <span id="closeHowToUseModalButtonOffboarding" class="close-button">&times;</span>
+                    <h1 class="text-xl sm:text-2xl font-bold text-red-600 mb-4">How to Use Offboarding FMS</h1>
+                    <div class="space-y-3 sm:space-y-4 text-gray-700 text-xs sm:text-sm leading-relaxed">
+                        <p>Welcome to the <strong>Offboarding FMS</strong>. This guide outlines how to use the system for managing employee separations.</p>
+                        <div>
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mt-2 sm:mt-3 mb-1">1. Initiating an Offboarding Entry</h2>
+                            <ul class="list-disc list-inside ml-4 space-y-1">
+                                <li>Click the <strong class="text-red-600">"Initiate Offboarding"</strong> button. This should open the designated Google Form (ensure the URL is correctly set in the script).</li>
+                                <li>Fill in the Google Form with all offboarding details (Employee Name, UID, Resignation Date, etc.) and submit it.</li>
+                                <li>New entries will appear in the FMS table after the next data sync (click 🔄).</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mt-2 sm:mt-3 mb-1">2. Viewing and Managing Entries</h2>
+                            <ul class="list-disc list-inside ml-4 space-y-1">
+                                <li>All active offboarding cases are listed in the main table.</li>
+                                <li>Use the <strong>search bar</strong> to find specific entries (e.g., by UID, Employee Name).</li>
+                                <li>Use the <strong>filters</strong> to narrow down by Status, Date, etc.</li>
+                                <li>Click the <span class="inline-flex items-center justify-center h-5 w-5 bg-blue-100 text-blue-600 rounded-full align-middle">👁️</span> icon for detailed information and to take actions.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mt-2 sm:mt-3 mb-1">3. Processing Through Offboarding Stages</h2>
+                            <ul class="list-disc list-inside ml-4 space-y-1">
+                                <li>Open <strong>Entry Details</strong> by clicking the 👁️ icon. The "Offboarding Stage Processing" section shows the pipeline.</li>
+                                <li>For each pending stage, a "Take Action" button (e.g., "Mark Exit Interview Complete") will be available.
+                                    <ul class="list-circle list-inside ml-5 space-y-1">
+                                        <li>If the `Take Action (...)` field for that stage contains a Google Form URL, clicking the button will open that Google Form in a new popup modal. After you submit the form and close this popup, the FMS will attempt to sync the data.</li>
+                                        <li>If the `Take Action (...)` field is empty or contains plain text instructions, clicking the button will open a confirmation popup. Review instructions, then click "Mark Complete" to update the stage.</li>
+                                    </ul>
+                                </li>
+                                <li>The system automatically updates the entry's status and refreshes the view after a stage is marked complete.</li>
+                                <li>Follow through all stages: Reason Clarification, Exit Interview, Resignation Approval, Role Transfer, Asset Handover, Documentation, and Full & Final Settlement.</li>
+                            </ul>
+                        </div>
+                         <div>
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mt-2 sm:mt-3 mb-1">4. Task Responsibilities</h2> <ul class="list-disc list-inside ml-4 space-y-1">
+                                <li>Click the <strong>“Responsibilities”</strong> button to view details on who typically performs each stage.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h2 class="text-md sm:text-lg font-semibold text-red-500 mt-2 sm:mt-3 mb-1">5. Syncing Data</h2> <ul class="list-disc list-inside ml-4 space-y-1">
+                                <li>Click the <strong>🔄 Sync icon</strong> in the top header to refresh and load the latest data from the Google Sheet.</li>
+                            </ul>
+                        </div>
+                        <div class="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 rounded-md">
+                            <p class="font-bold">🔧 Important Notes for Offboarding FMS:</p>
+                            <ul class="list-disc list-inside ml-4">
+                                <li>Ensure the <strong>Google Form URL</strong> for "Initiate Offboarding" is correctly set up in the script (variable `GOOGLE_FORM_URL_OFFBOARDING`).</li>
+                                <li>The <strong>API Endpoint URL</strong> must point to your Google Apps Script.</li>
+                                <li>Field names are case-sensitive and must match your Google Sheet and the sample data.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-4 sm:mt-6 text-right">
+                        <button type="button" id="okHowToUseModalButtonOffboarding" class="btn btn-primary">OK</button>
+                    </div>
+                </section>
+            </div></div>
+
+            <div id="stageActionModalOffboarding" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-white">
+                    <span id="closeStageActionModalButtonOffboarding" class="close-button">&times;</span>
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-700 mb-3" id="stageActionModalTitleOffboarding">Confirm Stage Action</h2>
+                    <div id="stageActionModalContentOffboarding" class="text-sm text-gray-600 space-y-3 mb-4">
+                        <p id="stageActionModalMessageOffboarding"></p>
+                        <div id="stageActionModalInstructionsOffboarding" class="p-2 bg-gray-50 rounded-md border border-gray-200 break-words" style="display:none;">
+                            <strong class="text-gray-700">Instructions/Reference:</strong>
+                            <p id="stageActionModalInstructionsTextOffboarding" class="mt-1 whitespace-pre-wrap"></p>
+                        </div>
+                    </div>
+                    <div class="mt-5 sm:mt-6 flex justify-end space-x-3">
+                        <button type="button" id="stageActionModalCancelButtonOffboarding" class="btn btn-secondary">Cancel</button>
+                        <button type="button" id="stageActionModalConfirmButtonOffboarding" class="btn btn-success">Mark Complete</button>
+                    </div>
+                </section>
+            </div></div>
+
+            <div id="googleFormActionModalOffboarding" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-gray-50">
+                    <span id="closeGoogleFormActionModalButtonOffboarding" class="close-button">&times;</span>
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-2 text-center" id="googleFormActionModalTitleOffboarding">Complete Action via Form</h2>
+                     <p class="text-xs sm:text-sm text-gray-500 text-center mb-1 sm:mb-2">Submit the form below. Closing this popup will attempt to sync data.</p>
+                    <iframe id="googleFormActionIframeOffboarding" src="about:blank" frameborder="0" marginheight="0" marginwidth="0">Loading Form…</iframe>
+                </section>
+            </div></div>
+
+            <div id="backendLoginModal" class="modal"><div class="modal-content-wrapper">
+                <section class="modal-content bg-white">
+                    <span id="closeBackendLoginModalButton" class="close-button">&times;</span>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Backend Access Login</h2>
+                    <form id="backendLoginForm">
+                        <div class="mb-4">
+                            <label for="loginId" class="block text-sm font-medium text-gray-700">Login ID</label>
+                            <input type="text" id="loginId" name="loginId" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div class="mb-6">
+                            <label for="loginPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                            <input type="password" id="loginPassword" name="loginPassword" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="button" id="cancelLoginButton" class="btn btn-secondary mr-2">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                </section>
+            </div></div>
+
+
+            <section id="entriesListSectionOffboarding" class="mb-6 sm:mb-10">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-700 mb-4 sm:mb-6">All Offboarding Entries</h2>
+                <div class="flex flex-col md:flex-row justify-between items-center mb-3 sm:mb-4 space-y-3 md:space-y-0 md:space-x-4">
+                    <div id="searchInputContainerOffboarding" class="w-full md:w-auto md:flex-shrink-0">
+                        <input type="text" id="searchInputOffboarding" placeholder="Search by UID, Name, Designation..." class="p-2 border border-gray-300 rounded-md shadow-sm w-full text-sm">
+                    </div>
+                    <div id="filterControlsContainerOffboarding" class="w-full md:w-auto flex flex-col sm:flex-row sm:flex-wrap gap-2 items-center md:justify-end">
+                        <div class="filter-item w-full sm:w-auto">
+                            <select id="statusFilterOffboarding" class="p-2 border border-gray-300 rounded-md shadow-sm w-full text-sm">
+                                <option value="">All Statuses</option>
+                            </select>
+                        </div>
+                        <div class="filter-item w-full sm:w-auto">
+                            <input type="date" id="dateStartFilterOffboarding" class="p-2 border border-gray-300 rounded-md shadow-sm w-full text-sm" placeholder="Start Date (Resignation)">
+                        </div>
+                        <div class="filter-item w-full sm:w-auto">
+                            <input type="date" id="dateEndFilterOffboarding" class="p-2 border border-gray-300 rounded-md shadow-sm w-full text-sm" placeholder="End Date (Resignation)">
+                        </div>
+                        <div class="filter-item w-full sm:w-auto">
+                            <select id="actionStatusFilterOffboarding" class="p-2 border border-gray-300 rounded-md shadow-sm w-full text-sm">
+                                <option value="">All Actions</option>
+                                <option value="overdue">Overdue Actions</option>
+                                <option value="upcoming">Upcoming Actions (Next 7 Days)</option>
+                            </select>
+                        </div>
+                         <button id="clearFiltersButtonOffboarding" class="btn btn-warning text-sm p-2 w-full sm:w-auto">Clear Filters</button>
+                    </div>
+                </div>
+                <div id="tableStatusOffboarding" class="text-center p-4 text-gray-500">Loading entries...</div>
+                <div class="table-container overflow-x-auto bg-white rounded-lg shadow">
+                    <table class="min-w-full divide-y divide-gray-200 responsive-table">
+                        <thead id="entriesTableHeadOffboarding" class="bg-gray-50">
+                            <tr></tr>
+                        </thead>
+                        <tbody id="entriesTableBodyOffboarding" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                 <div id="paginationControlsOffboarding" class="mt-3 sm:mt-4 flex justify-center items-center space-x-1 sm:space-x-2"></div>
+            </section>
+        </div>
+
+        <div id="messageAlertModalOffboarding" class="modal"><div class="modal-content-wrapper">
+            <div class="modal-content">
+                <span class="close-button" onclick="closeAlertModalOffboarding()">&times;</span>
+                <p id="modalMessageOffboarding" class="text-gray-700 text-center"></p>
+                <div class="mt-6 text-center default-modal-buttons-offboarding"><button onclick="closeAlertModalOffboarding()" class="btn btn-primary">OK</button></div>
+                <div class="mt-6 flex justify-center space-x-3 confirm-buttons-offboarding" style="display:none;"><button id="modalCancelButtonOffboarding" class="btn btn-secondary">Cancel</button><button id="modalConfirmButtonOffboarding" class="btn btn-danger">Confirm</button></div>
+                <div class="mt-6 flex justify-center space-x-3 custom-choice-buttons-offboarding" style="display:none;"></div>
+            </div>
+        </div></div>
+
+        <footer class="py-4 sm:py-6 text-center text-xs sm:text-sm text-gray-500">
+            © 2025 Your Company Name. All rights reserved. </footer>
+    </div> <script>
+        // --- CONFIGURATION & GLOBAL VARS ---
+        const API_ENDPOINT_URL_OFFBOARDING = 'https://script.google.com/macros/s/AKfycbxGIeAzzFmqaypB7BLrbqPVeRlzUbDV2oEHPo0-ZRk1Zjtl_eJbcA4W705EnnFh6vvh7g/exec';
+        const GOOGLE_FORM_URL_OFFBOARDING = 'https://docs.google.com/forms/d/e/1FAIpQLSdX2K20HWe6VMwhAaCNsNRJdD1fGoZFo8hTVrRw5TW4sFsGoA/viewform';
+        const BACKEND_DATA_SHEET_URL_OFFBOARDING = 'https://docs.google.com/spreadsheets/d/1Z83DMaghkPyQxXW4XrfT2GxK6YCb246OHNupGuopla4/edit?gid=21761261#gid=21761261';
+
+        const ITEMS_PER_PAGE_OFFBOARDING = 5;
+        let currentPageOffboarding = 1;
+        let allEntriesOffboarding = [];
+        let currentlyDisplayedEntriesOffboarding = [];
+
+        // --- OFFBOARDING FMS STATUSES ---
+        const STATUS_MAP_OFFBOARDING = {
+            PENDING_REASON_CLARIFICATION: "Pending: Reason Clarification",
+            PENDING_EXIT_INTERVIEW: "Pending: Exit Interview",
+            PENDING_RESIGNATION_APPROVAL: "Pending: Resignation Approval",
+            PENDING_ROLE_TRANSFER: "Pending: Role Transfer",
+            PENDING_ASSET_HANDOVER: "Pending: Asset Handover",
+            PENDING_DOCUMENTATION: "Pending: Documentation",
+            PENDING_FNF: "Pending: Full & Final Settlement",
+            FNF_COMPLETED: "Completed: Full & Final Settlement",
+            OFFBOARDING_CANCELLED: "Offboarding Cancelled"
+        };
+
+        const OFFBOARDING_STAGES = [
+            {
+                stageKey: 'ReasonClarification',
+                name: "Reason Clarification",
+                plannedKey: "Reason Clarification Planned",
+                actualKey: "Reason Clarification Actual",
+                timeDelayKey: "Reason Clarification Time Delay",
+                takeActionKey: "Take Action (Reason Clarification)",
+                nextStatus: STATUS_MAP_OFFBOARDING.PENDING_EXIT_INTERVIEW,
+                buttonText: "Mark Clarification Done"
+            },
+            {
+                stageKey: 'ExitInterview',
+                name: "Exit Interview",
+                plannedKey: "Exit Interview Planned",
+                actualKey: "Exit Interview Actual",
+                timeDelayKey: "Exit Interview Time Delay",
+                takeActionKey: "Take Action (Exit Interview)",
+                nextStatus: STATUS_MAP_OFFBOARDING.PENDING_RESIGNATION_APPROVAL,
+                buttonText: "Mark Exit Interview Done"
+            },
+            {
+                stageKey: 'ResignationApproved',
+                name: "Resignation Approved",
+                plannedKey: "Resignation Approved Planned",
+                actualKey: "Resignation Approved Actual",
+                timeDelayKey: "Resignation Approved Time Delay",
+                takeActionKey: "Take Action (Resignation Approved)",
+                nextStatus: STATUS_MAP_OFFBOARDING.PENDING_ROLE_TRANSFER,
+                buttonText: "Mark Resignation Approved"
+            },
+            {
+                stageKey: 'RolesTransfer',
+                name: "Roles and Responsibilities Transfer",
+                plannedKey: "Roles and Responsibilities transfer Planned",
+                actualKey: "Roles and Responsibilities transfer Actual",
+                timeDelayKey: "Roles and Responsibilities transfer Time Delay",
+                takeActionKey: "Take Action (Roles and Responsibilities transfer)",
+                nextStatus: STATUS_MAP_OFFBOARDING.PENDING_ASSET_HANDOVER,
+                buttonText: "Mark Roles Transferred"
+            },
+            {
+                stageKey: 'AssetsHandover',
+                name: "Assets Handover",
+                plannedKey: "Assets handover Planned",
+                actualKey: "Assets handover Actual",
+                timeDelayKey: "Assets handover Time Delay",
+                takeActionKey: "Take Action (Assets handover)",
+                nextStatus: STATUS_MAP_OFFBOARDING.PENDING_DOCUMENTATION,
+                buttonText: "Mark Assets Handed Over"
+            },
+            {
+                stageKey: 'Documentation',
+                name: "Documentation",
+                plannedKey: "Documentation Planned",
+                actualKey: "Documentation Actual",
+                timeDelayKey: "Documentation Time Delay",
+                takeActionKey: "Take Action (Documentation)",
+                nextStatus: STATUS_MAP_OFFBOARDING.PENDING_FNF,
+                buttonText: "Mark Documentation Complete"
+            },
+            {
+                stageKey: 'FNFSettlement',
+                name: "Full & Final Settlement",
+                plannedKey: "Full & Final Settlement Planned",
+                actualKey: "Full & Final Settlement Actual",
+                timeDelayKey: "Full & Final Settlement Time Delay",
+                takeActionKey: "Take Action (Full & Final Settlement)",
+                nextStatus: STATUS_MAP_OFFBOARDING.FNF_COMPLETED,
+                buttonText: "Mark F&F Complete"
+            }
+        ];
+
+        const tableHeadersConfigOffboarding = [
+            { key: 'UID', label: 'UID' },
+            { key: 'Employee Name', label: 'Employee Name' },
+            { key: 'Designation', label: 'Designation' },
+            { key: 'Date of resignation', label: 'Resignation Date', isDate: true },
+            { key: 'Date of relieving', label: 'Relieving Date', isDate: true },
+            { key: 'status', label: 'Current Status' },
+            { key: 'nextPlannedActionOn', label: 'Next Planned On', isDate: true, customRender: (entry) => getNextPlannedActionTimestampOffboarding(entry) },
+            { key: 'actions', label: 'Actions' }
+        ];
+
+
+        // --- DOM ELEMENTS ---
+        const fmsMainContainer = document.getElementById('fmsMainContainer'); // New
+        const mobileRestrictionOverlay = document.getElementById('mobileRestrictionOverlay'); // New
+
+        const addEntrySectionModalOffboarding = document.getElementById('addEntrySectionModalOffboarding');
+        const openEntryFormModalButtonOffboarding = document.getElementById('openEntryFormModalButtonOffboarding');
+        const closeEntryFormModalButtonOffboarding = document.getElementById('closeEntryFormModalButtonOffboarding');
+        const googleFormIframeOffboarding = document.getElementById('googleFormIframeOffboarding');
+
+        const doerInfoModalOffboarding = document.getElementById('doerInfoModalOffboarding');
+        const openDoerInfoModalButtonOffboarding = document.getElementById('openDoerInfoModalButtonOffboarding');
+        const closeDoerInfoModalButtonOffboarding = document.getElementById('closeDoerInfoModalButtonOffboarding');
+        const okDoerInfoModalButtonOffboarding = document.getElementById('okDoerInfoModalButtonOffboarding');
+
+        const howToUseModalOffboarding = document.getElementById('howToUseModalOffboarding');
+        const openHowToUseModalButtonOffboarding = document.getElementById('openHowToUseModalButtonOffboarding');
+        const closeHowToUseModalButtonOffboarding = document.getElementById('closeHowToUseModalButtonOffboarding');
+        const okHowToUseModalButtonOffboarding = document.getElementById('okHowToUseModalButtonOffboarding');
+
+        const openBackendDataButtonOffboarding = document.getElementById('openBackendDataButtonOffboarding');
+        const backendLoginModal = document.getElementById('backendLoginModal');
+        const closeBackendLoginModalButton = document.getElementById('closeBackendLoginModalButton');
+        const backendLoginForm = document.getElementById('backendLoginForm');
+        const cancelLoginButton = document.getElementById('cancelLoginButton');
+
+        const entryDetailsModalOffboarding = document.getElementById('entryDetailsModalOffboarding');
+        const detailsModalTitleOffboarding = document.getElementById('detailsModalTitleOffboarding');
+        const detailsModalSubtitleOffboarding = document.getElementById('detailsModalSubtitleOffboarding');
+        const detailsModalContentOffboarding = document.getElementById('detailsModalContentOffboarding');
+
+        const messageAlertModalOffboarding = document.getElementById('messageAlertModalOffboarding');
+        const modalMessageOffboarding = document.getElementById('modalMessageOffboarding');
+        const defaultModalButtonsOffboarding = messageAlertModalOffboarding.querySelector('.default-modal-buttons-offboarding');
+        const confirmModalButtonsOffboarding = messageAlertModalOffboarding.querySelector('.confirm-buttons-offboarding');
+        const modalConfirmButtonOffboarding = document.getElementById('modalConfirmButtonOffboarding');
+        const modalCancelButtonOffboarding = document.getElementById('modalCancelButtonOffboarding');
+
+        const stageActionModalOffboarding = document.getElementById('stageActionModalOffboarding');
+        const stageActionModalTitleOffboarding = document.getElementById('stageActionModalTitleOffboarding');
+        const stageActionModalMessageOffboarding = document.getElementById('stageActionModalMessageOffboarding');
+        const stageActionModalInstructionsOffboarding = document.getElementById('stageActionModalInstructionsOffboarding');
+        const stageActionModalInstructionsTextOffboarding = document.getElementById('stageActionModalInstructionsTextOffboarding');
+        const stageActionModalConfirmButtonOffboarding = document.getElementById('stageActionModalConfirmButtonOffboarding');
+        const stageActionModalCancelButtonOffboarding = document.getElementById('stageActionModalCancelButtonOffboarding');
+        const closeStageActionModalButtonOffboarding = document.getElementById('closeStageActionModalButtonOffboarding');
+
+        const googleFormActionModalOffboarding = document.getElementById('googleFormActionModalOffboarding');
+        const googleFormActionModalTitleOffboarding = document.getElementById('googleFormActionModalTitleOffboarding');
+        const googleFormActionIframeOffboarding = document.getElementById('googleFormActionIframeOffboarding');
+        const closeGoogleFormActionModalButtonOffboarding = document.getElementById('closeGoogleFormActionModalButtonOffboarding');
+
+        const entriesTableHeadOffboarding = document.getElementById('entriesTableHeadOffboarding');
+        const entriesTableBodyOffboarding = document.getElementById('entriesTableBodyOffboarding');
+        const tableStatusOffboarding = document.getElementById('tableStatusOffboarding');
+        const searchInputOffboarding = document.getElementById('searchInputOffboarding');
+        const paginationControlsOffboarding = document.getElementById('paginationControlsOffboarding');
+
+        const scorecardTotalResignations = document.getElementById('scorecardTotalResignations');
+        const scorecardPendingExitInterview = document.getElementById('scorecardPendingExitInterview');
+        const scorecardPendingFNF = document.getElementById('scorecardPendingFNF');
+        const scorecardCompletedSeparations = document.getElementById('scorecardCompletedSeparations');
+
+        const entranceAnimationOverlay = document.getElementById('entranceAnimationOverlay');
+
+        const statusFilterOffboarding = document.getElementById('statusFilterOffboarding');
+        const dateStartFilterOffboarding = document.getElementById('dateStartFilterOffboarding');
+        const dateEndFilterOffboarding = document.getElementById('dateEndFilterOffboarding');
+        const actionStatusFilterOffboarding = document.getElementById('actionStatusFilterOffboarding');
+        const clearFiltersButtonOffboarding = document.getElementById('clearFiltersButtonOffboarding');
+
+
+        // --- MOBILE RESTRICTION ---
+        function checkMobileView() {
+            // Simple check for screen width, adjust threshold as needed
+            if (window.innerWidth < 768) { // Typical tablet breakpoint
+                if(fmsMainContainer) fmsMainContainer.style.display = 'none';
+                if(mobileRestrictionOverlay) mobileRestrictionOverlay.style.display = 'flex';
+            } else {
+                if(fmsMainContainer) fmsMainContainer.style.display = 'block'; // Or 'flex' if body is flex
+                if(mobileRestrictionOverlay) mobileRestrictionOverlay.style.display = 'none';
+            }
+        }
+
+
+        // --- MODAL CONTROL FUNCTIONS ---
+        function openModalOffboarding(modalElement) {
+            const modalContent = modalElement.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.classList.remove('modal-popup-active');
+                void modalContent.offsetWidth;
+                modalContent.classList.add('modal-popup-active');
+            }
+            modalElement.style.display = "flex";
+        }
+        function closeModalOffboarding(modalElement) {
+            modalElement.style.display = "none";
+        }
+
+        function openEntryDetailsModalOffboarding(entryId) {
+            const entry = allEntriesOffboarding.find(e => e.UID === entryId);
+            if (!entry) {
+                showUserAlertOffboarding("Error: Could not find entry details for UID: " + entryId, "error");
+                return;
+            }
+            detailsModalTitleOffboarding.textContent = `Offboarding: ${entry['Employee Name'] || entry.UID} (${entry['Designation'] || 'N/A'})`;
+            detailsModalSubtitleOffboarding.textContent = `Resignation: ${formatDateForDisplay(entry['Date of resignation'])} - Relieving: ${formatDateForDisplay(entry['Date of relieving'])} - Status: ${entry.status || determineOffboardingStatus(entry)}`;
+            populateDetailsModalOffboarding(entry);
+            openModalOffboarding(entryDetailsModalOffboarding);
+        }
+
+        function showUserAlertOffboarding(message, type = 'info', onConfirm = null) {
+            modalMessageOffboarding.textContent = message;
+            openModalOffboarding(messageAlertModalOffboarding);
+
+            defaultModalButtonsOffboarding.style.display = 'none';
+            confirmModalButtonsOffboarding.style.display = 'none';
+
+            if (type === 'confirm' && onConfirm) {
+                confirmModalButtonsOffboarding.style.display = 'flex';
+                modalConfirmButtonOffboarding.textContent = 'Confirm';
+                const newConfirmButton = modalConfirmButtonOffboarding.cloneNode(true);
+                modalConfirmButtonOffboarding.parentNode.replaceChild(newConfirmButton, modalConfirmButtonOffboarding);
+                newConfirmButton.onclick = () => { onConfirm(); closeModalOffboarding(messageAlertModalOffboarding); };
+
+                const newCancelButton = modalCancelButtonOffboarding.cloneNode(true);
+                modalCancelButtonOffboarding.parentNode.replaceChild(newCancelButton, modalCancelButtonOffboarding);
+                newCancelButton.onclick = closeAlertModalOffboarding;
+
+            } else {
+                defaultModalButtonsOffboarding.style.display = 'block';
+                 const okButton = defaultModalButtonsOffboarding.querySelector('button');
+                 const newOkButton = okButton.cloneNode(true);
+                 okButton.parentNode.replaceChild(newOkButton, okButton);
+                 newOkButton.onclick = closeAlertModalOffboarding;
+            }
+
+            modalMessageOffboarding.classList.remove('text-green-600', 'text-red-600', 'text-yellow-600');
+            if (type === 'success') modalMessageOffboarding.classList.add('text-green-600');
+            else if (type === 'error') modalMessageOffboarding.classList.add('text-red-600');
+            else if (type === 'warning') modalMessageOffboarding.classList.add('text-yellow-600');
+        }
+        function closeAlertModalOffboarding() { closeModalOffboarding(messageAlertModalOffboarding); }
+
+
+        function openStageActionModalOffboarding(entry, stage, stageIndex) {
+            const actionInstruction = entry[stage.takeActionKey];
+            const isGoogleForm = actionInstruction && typeof actionInstruction === 'string' && actionInstruction.includes('docs.google.com/forms');
+
+            if (isGoogleForm) {
+                if(googleFormActionModalTitleOffboarding) googleFormActionModalTitleOffboarding.textContent = `Action: ${stage.name}`;
+                googleFormActionIframeOffboarding.src = actionInstruction + (actionInstruction.includes('?') ? '&embedded=true' : '?embedded=true');
+                if(googleFormActionModalOffboarding) googleFormActionModalOffboarding.dataset.currentEntryUID = entry.UID;
+                openModalOffboarding(googleFormActionModalOffboarding);
+            } else {
+                stageActionModalTitleOffboarding.textContent = `Confirm Stage: ${stage.name}`;
+                stageActionModalMessageOffboarding.textContent = `Are you sure you want to mark "${stage.name}" as complete for UID ${entry.UID} (${entry['Employee Name']})?`;
+
+                if (actionInstruction && !(String(actionInstruction).startsWith('http://') || String(actionInstruction).startsWith('https://'))) {
+                    stageActionModalInstructionsTextOffboarding.textContent = actionInstruction;
+                    stageActionModalInstructionsOffboarding.style.display = 'block';
+                } else if (actionInstruction) {
+                     stageActionModalInstructionsTextOffboarding.innerHTML = `Associated Link (for reference, copy if needed): <a href="${actionInstruction}" target="_blank" class="text-indigo-600 hover:underline">${actionInstruction}</a>`;
+                    stageActionModalInstructionsOffboarding.style.display = 'block';
+                }
+                else {
+                    stageActionModalInstructionsOffboarding.style.display = 'none';
+                }
+
+                const newConfirmBtn = stageActionModalConfirmButtonOffboarding.cloneNode(true);
+                stageActionModalConfirmButtonOffboarding.parentNode.replaceChild(newConfirmBtn, stageActionModalConfirmButtonOffboarding);
+                newConfirmBtn.textContent = stage.buttonText || "Mark Complete";
+                newConfirmBtn.onclick = () => {
+                    processOffboardingStep(entry.UID, newConfirmBtn, stageIndex);
+                    closeModalOffboarding(stageActionModalOffboarding);
+                };
+                openModalOffboarding(stageActionModalOffboarding);
+            }
+        }
+
+
+        window.onclick = (event) => {
+            const modals = [addEntrySectionModalOffboarding, doerInfoModalOffboarding, entryDetailsModalOffboarding, messageAlertModalOffboarding, howToUseModalOffboarding, stageActionModalOffboarding, googleFormActionModalOffboarding, backendLoginModal]; // Added backendLoginModal
+            modals.forEach(modal => {
+                if (modal && modal.style.display === "flex" && event.target === modal) {
+                    closeModalOffboarding(modal);
+                     if (modal.id === 'addEntrySectionModalOffboarding') {
+                        googleFormIframeOffboarding.src = 'about:blank';
+                        handleAddOffboardingModalClose();
+                    } else if (modal.id === 'googleFormActionModalOffboarding') {
+                        googleFormActionIframeOffboarding.src = 'about:blank';
+                        handleGoogleFormActionModalCloseOffboarding();
+                    } else if (modal.id === 'backendLoginModal') {
+                        backendLoginForm.reset(); // Reset form on clicking outside
+                    }
+                }
+            });
+        }
+
+        function handleGoogleFormActionModalCloseOffboarding() {
+            const currentEntryUID = googleFormActionModalOffboarding.dataset.currentEntryUID;
+            triggerSyncOffboarding("Attempting to sync data after form interaction...", currentEntryUID);
+            if(googleFormActionModalOffboarding.dataset.currentEntryUID) delete googleFormActionModalOffboarding.dataset.currentEntryUID;
+        }
+
+        function handleAddOffboardingModalClose() {
+             triggerSyncOffboarding("Attempting to sync data after initiating offboarding...", null);
+        }
+
+
+        function triggerSyncOffboarding(message, entryUIDToRefreshDetails = null) {
+            showUserAlertOffboarding(message, "info");
+            const syncButtonForAnimation = document.getElementById('syncButtonOffboarding');
+            const svgIcon = syncButtonForAnimation ? syncButtonForAnimation.querySelector('svg') : null;
+            if (svgIcon) svgIcon.classList.add('rotate-animate');
+            if (syncButtonForAnimation) setButtonLoadingOffboarding(true, syncButtonForAnimation);
+
+            fetchEntriesOffboarding().then(() => {
+                showUserAlertOffboarding("Data synced. Please check for updates.", "success");
+
+                if (entryDetailsModalOffboarding.style.display === "flex" && entryUIDToRefreshDetails) {
+                    const updatedEntry = allEntriesOffboarding.find(e => e.UID === entryUIDToRefreshDetails);
+                    if (updatedEntry) {
+                        populateDetailsModalOffboarding(updatedEntry);
+                         detailsModalSubtitleOffboarding.textContent = `Resignation: ${formatDateForDisplay(updatedEntry['Date of resignation'])} - Relieving: ${formatDateForDisplay(updatedEntry['Date of relieving'])} - Status: ${updatedEntry.status || determineOffboardingStatus(updatedEntry)}`;
+                    } else {
+                        closeModalOffboarding(entryDetailsModalOffboarding);
+                    }
+                }
+            }).catch(error => {
+                console.error("Error during sync:", error);
+                showUserAlertOffboarding("Error syncing data: " + error.message, "error");
+            }).finally(() => {
+                if (svgIcon) svgIcon.classList.remove('rotate-animate');
+                if (syncButtonForAnimation) setButtonLoadingOffboarding(false, syncButtonForAnimation);
+            });
+        }
+
+
+        // --- UTILITY FUNCTIONS (can be shared or made specific if needed) ---
+        function setButtonLoadingOffboarding(isLoading, button) {
+            if (!button) return;
+            button.disabled = isLoading;
+            button.classList.toggle('opacity-50', isLoading);
+            button.classList.toggle('cursor-not-allowed', isLoading);
+        }
+
+        function formatDateForDisplay(dateTimeStringOrObject) { // Re-using existing robust function
+            if (!dateTimeStringOrObject || dateTimeStringOrObject === 'N/A' || String(dateTimeStringOrObject).trim() === "" || dateTimeStringOrObject === "SKIPPED") return 'N/A';
+            let date;
+            if (dateTimeStringOrObject instanceof Date) {
+                date = dateTimeStringOrObject;
+            } else {
+                const customFormatRegex = /^(\d{1,2})-([A-Za-z]{3})-(\d{4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$/;
+                const isoWithMillisRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+                const isoDateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/; // Added for "Date of resignation", "Date of relieving"
+
+                let match = typeof dateTimeStringOrObject === 'string' ? dateTimeStringOrObject.match(customFormatRegex) : null;
+
+                if (match) {
+                    const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+                    let hours = parseInt(match[4], 10);
+                    if (match[7].toUpperCase() === 'PM' && hours < 12) hours += 12;
+                    if (match[7].toUpperCase() === 'AM' && hours === 12) hours = 0;
+                    date = new Date(Date.UTC(parseInt(match[3],10), months[match[2]], parseInt(match[1],10), hours, parseInt(match[5],10), parseInt(match[6],10)));
+                } else if (typeof dateTimeStringOrObject === 'string' && (isoWithMillisRegex.test(dateTimeStringOrObject) || isoDateOnlyRegex.test(dateTimeStringOrObject))) {
+                     // Handle cases where only date is provided (e.g., "30-May-2024 12:00:00 AM" might parse as date only by backend)
+                    if (isoDateOnlyRegex.test(dateTimeStringOrObject) && dateTimeStringOrObject.length === 10) { // "YYYY-MM-DD"
+                         const parts = dateTimeStringOrObject.split('-');
+                         date = new Date(Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+                    } else {
+                        date = new Date(dateTimeStringOrObject); // Standard ISO parsing
+                    }
+                }
+                 else { // Fallback for other potential string formats or direct Date objects
+                    date = new Date(dateTimeStringOrObject);
+                }
+            }
+
+            if (isNaN(date.getTime())) {
+                return String(dateTimeStringOrObject); // Return original if parsing failed
+            }
+
+            // Check if the time part is midnight (00:00:00)
+            const isDateOnly = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+
+            const options = isDateOnly
+                ? { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }
+                : { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' };
+
+            let formatted = new Intl.DateTimeFormat('en-GB', options).format(date);
+            formatted = formatted.replace(',', '');
+            if (!isDateOnly) { // Only remove AM/PM period for full datetime
+                 formatted = formatted.replace(/\./g, '').toUpperCase();
+            }
+            return formatted;
+        }
+
+
+         function formatDateForInput(date) { // Re-using
+            if (!(date instanceof Date) || isNaN(date.getTime())) {
+                date = new Date();
+            }
+            const day = String(date.getDate()).padStart(2, '0');
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const monthName = months[date.getMonth()];
+            const year = date.getFullYear();
+            let hours = date.getHours();
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const strHours = String(hours).padStart(2, '0');
+            return `${day}-${monthName}-${year} ${strHours}:${minutes}:${seconds} ${ampm}`;
+        }
+
+        function addDays(dateInput, days) { // Re-using
+            let baseDate;
+            if (dateInput instanceof Date) {
+                baseDate = new Date(dateInput.getTime());
+            } else if (typeof dateInput === 'string') {
+                const parsed = parseFlexibleDateOffboarding(dateInput);
+                if (parsed && !isNaN(parsed.getTime())) {
+                    baseDate = parsed;
+                } else {
+                    baseDate = new Date();
+                }
+            } else {
+                baseDate = new Date();
+            }
+            baseDate.setDate(baseDate.getDate() + days);
+            return baseDate;
+        }
+
+        function parseFlexibleDateOffboarding(dateStr) { // Re-using
+            if (!dateStr || typeof dateStr !== 'string') return null;
+            const customFormatRegex = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})(?: (\d{1,2}):(\d{2}):(\d{2}) (AM|PM))?$/; // Made time part optional
+            let match = dateStr.match(customFormatRegex);
+            if (match) {
+                const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+                let hours = 0, minutes = 0, seconds = 0;
+                if (match[4] && match[7]) { // If time part is present
+                    hours = parseInt(match[4], 10);
+                    minutes = parseInt(match[5], 10);
+                    seconds = parseInt(match[6], 10);
+                    if (match[7].toUpperCase() === 'PM' && hours < 12) hours += 12;
+                    if (match[7].toUpperCase() === 'AM' && hours === 12) hours = 0;
+                }
+                return new Date(Date.UTC(parseInt(match[3],10), months[match[2]], parseInt(match[1],10), hours, minutes, seconds));
+            }
+            // Fallback for ISO and other standard formats
+            const standardDate = new Date(dateStr);
+            if (!isNaN(standardDate.getTime())) return standardDate;
+            return null;
+        }
+
+
+        function calculateTimeDelayOffboarding(actualTimestamp, plannedTimestamp) { // Re-using
+            if (!actualTimestamp || !plannedTimestamp || actualTimestamp === "N/A" || plannedTimestamp === "N/A" || String(actualTimestamp).trim() === "" || String(plannedTimestamp).trim() === "" || actualTimestamp === "SKIPPED" || plannedTimestamp === "SKIPPED") return "<span class='text-gray-400'>N/A</span>";
+
+            const actual = parseFlexibleDateOffboarding(actualTimestamp);
+            const planned = parseFlexibleDateOffboarding(plannedTimestamp);
+
+            if (!actual || isNaN(actual.getTime()) || !planned || isNaN(planned.getTime())) {
+                 return "<span class='text-gray-400'>Invalid Date</span>";
+            }
+
+            const diff = actual.getTime() - planned.getTime();
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            let delayClass = 'delay-ontime';
+            let delayText = "On Time";
+
+            if (diff > 0) {
+                delayClass = 'delay-late';
+                if (days > 0) delayText = `${days} day(s) late`;
+                else if (hours > 0) delayText = `${hours} hour(s) late`;
+                else if (minutes > 0) delayText = `${minutes} min(s) late`;
+                else delayText = "Slightly Late";
+            } else if (diff < 0) {
+                delayClass = 'delay-early';
+                const absDays = Math.abs(days);
+                const absHours = Math.abs(hours);
+                const absMinutes = Math.abs(minutes);
+                if (absDays > 0) delayText = `${absDays} day(s) early`;
+                else if (absHours > 0) delayText = `${absHours} hour(s) early`;
+                else if (absMinutes > 0) delayText = `${absMinutes} min(s) early`;
+                else delayText = "Slightly Early";
+            }
+            return `<span class="${delayClass}">${delayText}</span>`;
+        }
+
+        // --- SCORECARD FUNCTIONS ---
+        function renderScorecardsOffboarding(entries) {
+            scorecardTotalResignations.textContent = entries.filter(e => e.status !== STATUS_MAP_OFFBOARDING.FNF_COMPLETED && e.status !== STATUS_MAP_OFFBOARDING.OFFBOARDING_CANCELLED).length;
+            let pendingExitInterviewCount = 0;
+            let pendingFNFCount = 0;
+            let completedCount = 0;
+
+            entries.forEach(entry => {
+                const status = entry.status || determineOffboardingStatus(entry);
+                if (status === STATUS_MAP_OFFBOARDING.PENDING_EXIT_INTERVIEW) pendingExitInterviewCount++;
+                if (status === STATUS_MAP_OFFBOARDING.PENDING_FNF) pendingFNFCount++;
+                if (status === STATUS_MAP_OFFBOARDING.FNF_COMPLETED) completedCount++;
+            });
+
+            scorecardPendingExitInterview.textContent = pendingExitInterviewCount;
+            scorecardPendingFNF.textContent = pendingFNFCount;
+            scorecardCompletedSeparations.textContent = completedCount;
+        }
+
+
+        function initializeTableHeadersOffboarding() {
+            const headerRow = entriesTableHeadOffboarding.querySelector('tr') || entriesTableHeadOffboarding.appendChild(document.createElement('tr'));
+            headerRow.innerHTML = '';
+
+            tableHeadersConfigOffboarding.forEach(config => {
+                const th = document.createElement('th');
+                th.className = 'px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                th.textContent = config.label;
+                headerRow.appendChild(th);
+            });
+        }
+
+        // --- EVENT LISTENERS & INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkMobileView(); // Check on initial load
+            window.addEventListener('resize', checkMobileView); // Check on resize
+
+            // Only initialize FMS if not on mobile restricted view
+            if (mobileRestrictionOverlay.style.display === 'none') {
+                initializeTableHeadersOffboarding();
+                fetchEntriesOffboarding().then(populateFilterDropdownsOffboarding);
+
+                openEntryFormModalButtonOffboarding.addEventListener('click', () => {
+                    if (GOOGLE_FORM_URL_OFFBOARDING === 'YOUR_GOOGLE_FORM_URL_FOR_OFFBOARDING_HERE') {
+                        showUserAlertOffboarding("Placeholder: Configure your Google Form URL for initiating offboarding in the script (variable GOOGLE_FORM_URL_OFFBOARDING).", "warning");
+                        googleFormIframeOffboarding.src = 'about:blank';
+                    } else {
+                        googleFormIframeOffboarding.src = GOOGLE_FORM_URL_OFFBOARDING + (GOOGLE_FORM_URL_OFFBOARDING.includes('?') ? '&embedded=true' : '?embedded=true');
+                    }
+                    openModalOffboarding(addEntrySectionModalOffboarding);
+                });
+                closeEntryFormModalButtonOffboarding.addEventListener('click', () => {
+                    closeModalOffboarding(addEntrySectionModalOffboarding);
+                    googleFormIframeOffboarding.src = 'about:blank';
+                    handleAddOffboardingModalClose();
+                });
+
+                openDoerInfoModalButtonOffboarding.addEventListener('click', () => openModalOffboarding(doerInfoModalOffboarding));
+                closeDoerInfoModalButtonOffboarding.addEventListener('click', () => closeModalOffboarding(doerInfoModalOffboarding));
+                okDoerInfoModalButtonOffboarding.addEventListener('click', () => closeModalOffboarding(doerInfoModalOffboarding));
+
+                if(openBackendDataButtonOffboarding) {
+                    openBackendDataButtonOffboarding.addEventListener('click', () => {
+                        openModalOffboarding(backendLoginModal);
+                    });
+                }
+                if(closeBackendLoginModalButton) {
+                    closeBackendLoginModalButton.addEventListener('click', () => {
+                        closeModalOffboarding(backendLoginModal);
+                        backendLoginForm.reset();
+                    });
+                }
+                if(cancelLoginButton) {
+                     cancelLoginButton.addEventListener('click', () => {
+                        closeModalOffboarding(backendLoginModal);
+                        backendLoginForm.reset();
+                    });
+                }
+                if(backendLoginForm) {
+                    backendLoginForm.addEventListener('submit', (event) => {
+                        event.preventDefault();
+                        const loginId = document.getElementById('loginId').value;
+                        const password = document.getElementById('loginPassword').value;
+
+                        if (loginId === 'Admin' && password === 'Admin') {
+                            window.open(BACKEND_DATA_SHEET_URL_OFFBOARDING, '_blank');
+                            closeModalOffboarding(backendLoginModal);
+                            backendLoginForm.reset();
+                        } else {
+                            showUserAlertOffboarding('Login Failed: Invalid ID or Password.', 'error');
+                        }
+                    });
+                }
+
+
+                openHowToUseModalButtonOffboarding.addEventListener('click', () => openModalOffboarding(howToUseModalOffboarding));
+                closeHowToUseModalButtonOffboarding.addEventListener('click', () => closeModalOffboarding(howToUseModalOffboarding));
+                okHowToUseModalButtonOffboarding.addEventListener('click', () => closeModalOffboarding(howToUseModalOffboarding));
+
+                modalCancelButtonOffboarding.onclick = closeAlertModalOffboarding;
+
+                if(closeStageActionModalButtonOffboarding) closeStageActionModalButtonOffboarding.onclick = () => closeModalOffboarding(stageActionModalOffboarding);
+                if(stageActionModalCancelButtonOffboarding) stageActionModalCancelButtonOffboarding.onclick = () => closeModalOffboarding(stageActionModalOffboarding);
+
+                if (closeGoogleFormActionModalButtonOffboarding) {
+                    closeGoogleFormActionModalButtonOffboarding.onclick = () => {
+                        closeModalOffboarding(googleFormActionModalOffboarding);
+                        googleFormActionIframeOffboarding.src = 'about:blank';
+                        handleGoogleFormActionModalCloseOffboarding();
+                    };
+                }
+
+                updateDateTimeOffboarding();
+                setInterval(updateDateTimeOffboarding, 1000);
+
+                const syncButton = document.getElementById('syncButtonOffboarding');
+                if (syncButton) {
+                    syncButton.addEventListener('click', () => {
+                       triggerSyncOffboarding("Syncing data manually...", null);
+                    });
+                }
+
+                searchInputOffboarding.addEventListener('input', applyFiltersAndSearchOffboarding);
+                statusFilterOffboarding.addEventListener('change', applyFiltersAndSearchOffboarding);
+                dateStartFilterOffboarding.addEventListener('change', applyFiltersAndSearchOffboarding);
+                dateEndFilterOffboarding.addEventListener('change', applyFiltersAndSearchOffboarding);
+                actionStatusFilterOffboarding.addEventListener('change', applyFiltersAndSearchOffboarding);
+
+                clearFiltersButtonOffboarding.addEventListener('click', () => {
+                    searchInputOffboarding.value = '';
+                    statusFilterOffboarding.value = '';
+                    dateStartFilterOffboarding.value = '';
+                    dateEndFilterOffboarding.value = '';
+                    actionStatusFilterOffboarding.value = '';
+                    applyFiltersAndSearchOffboarding();
+                });
+            } // End of if not mobile restricted
+        });
+
+        function determineOffboardingStatus(entry) {
+            // Iterate backwards through stages to find the last completed one
+            for (let i = OFFBOARDING_STAGES.length - 1; i >= 0; i--) {
+                const stage = OFFBOARDING_STAGES[i];
+                if (entry[stage.actualKey] && entry[stage.actualKey] !== "N/A" && String(entry[stage.actualKey]).trim() !== "") {
+                    return stage.nextStatus; // This is the status *after* this stage is done
+                }
+            }
+            // If no stages are completed, it's pending the first stage
+            return STATUS_MAP_OFFBOARDING.PENDING_REASON_CLARIFICATION;
+        }
+
+
+        async function processOffboardingStep(entryUID, buttonElement, stageIndex) {
+            if(buttonElement) setButtonLoadingOffboarding(true, buttonElement);
+
+            const entryIdx = allEntriesOffboarding.findIndex(e => e.UID === entryUID);
+            if (entryIdx === -1) {
+                showUserAlertOffboarding('Error: Entry not found for update.', 'error');
+                if(buttonElement) setButtonLoadingOffboarding(false, buttonElement);
+                return;
+            }
+
+            const now = new Date();
+            const entryToUpdateLocally = { ...allEntriesOffboarding[entryIdx] };
+            const currentStage = OFFBOARDING_STAGES[stageIndex];
+            const dataToUpdatePayload = {};
+
+            dataToUpdatePayload[currentStage.actualKey] = formatDateForInput(now);
+
+            const plannedTimestamp = entryToUpdateLocally[currentStage.plannedKey];
+            if (plannedTimestamp && plannedTimestamp !== "SKIPPED" && plannedTimestamp !== "N/A") {
+                const timeDelayString = calculateTimeDelayOffboarding(dataToUpdatePayload[currentStage.actualKey], plannedTimestamp).replace(/<[^>]*>?/gm, '');
+                dataToUpdatePayload[currentStage.timeDelayKey] = timeDelayString;
+            } else {
+                dataToUpdatePayload[currentStage.timeDelayKey] = "N/A";
+            }
+
+            let newStatusDeterminedByThisStep = currentStage.nextStatus;
+
+            // If this is not the last stage, set the planned date for the next stage
+            if (stageIndex + 1 < OFFBOARDING_STAGES.length) {
+                const nextStage = OFFBOARDING_STAGES[stageIndex + 1];
+                // Only set next planned date if it's not already set or is in the past
+                if (!entryToUpdateLocally[nextStage.plannedKey] || parseFlexibleDateOffboarding(entryToUpdateLocally[nextStage.plannedKey]) < now) {
+                     dataToUpdatePayload[nextStage.plannedKey] = formatDateForInput(addDays(now, 2)); // Default 2 days for next step
+                }
+            }
+
+
+            try {
+                const res = await fetch(`${API_ENDPOINT_URL_OFFBOARDING}?UID=${entryToUpdateLocally.UID}&action=updateEntry`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({jsonData: JSON.stringify({ UID: entryToUpdateLocally.UID, updates: dataToUpdatePayload })})
+                });
+
+                if (res.ok) {
+                    const responseData = await res.json().catch(() => ({})); // Default to empty object on JSON parse error
+                    showUserAlertOffboarding(responseData.message || `Entry ${entryToUpdateLocally.UID} (${entryToUpdateLocally['Employee Name']}) updated. New status: "${newStatusDeterminedByThisStep}"`, 'success');
+
+                    Object.assign(allEntriesOffboarding[entryIdx], dataToUpdatePayload);
+                    allEntriesOffboarding[entryIdx].status = newStatusDeterminedByThisStep;
+
+                    applyFiltersAndSearchOffboarding();
+                    if (entryDetailsModalOffboarding.style.display === "flex") {
+                         const currentModalEntry = allEntriesOffboarding.find(e => e.UID === entryUID);
+                         if(currentModalEntry) {
+                            populateDetailsModalOffboarding(currentModalEntry);
+                            detailsModalSubtitleOffboarding.textContent = `Resignation: ${formatDateForDisplay(currentModalEntry['Date of resignation'])} - Relieving: ${formatDateForDisplay(currentModalEntry['Date of relieving'])} - Status: ${currentModalEntry.status}`;
+                         }
+                    }
+                } else {
+                    const errorResult = await res.json().catch(() => ({ message: 'Unknown error during update.' }));
+                    showUserAlertOffboarding('Error updating status via API: ' + (errorResult.error || errorResult.message || res.statusText), 'error');
+                }
+            } catch (e) {
+                console.error('Error updating status:', e);
+                showUserAlertOffboarding('Network error during update: ' + e.message + '. Local changes might not be saved to backend.', 'error');
+                // Optionally apply local changes for UI responsiveness even on network error
+                Object.assign(allEntriesOffboarding[entryIdx], dataToUpdatePayload);
+                allEntriesOffboarding[entryIdx].status = newStatusDeterminedByThisStep;
+                applyFiltersAndSearchOffboarding();
+                if (entryDetailsModalOffboarding.style.display === "flex") {
+                    const currentModalEntry = allEntriesOffboarding.find(e => e.UID === entryUID);
+                    if(currentModalEntry) populateDetailsModalOffboarding(currentModalEntry);
+                }
+            } finally {
+                if(buttonElement) setButtonLoadingOffboarding(false, buttonElement);
+            }
+        }
+
+        function populateDetailsModalOffboarding(entry) {
+            detailsModalContentOffboarding.innerHTML = '';
+
+            const modalContentSection = entryDetailsModalOffboarding.querySelector('.modal-content');
+            const existingControlsGroup = modalContentSection.querySelector('.modal-controls-group');
+            if (existingControlsGroup) existingControlsGroup.remove();
+
+            const controlsGroup = document.createElement('div');
+            controlsGroup.className = 'modal-controls-group';
+
+            const syncStageButton = document.createElement('button');
+            syncStageButton.className = 'modal-control-button sync-btn btn-icon-only p-1.5';
+            syncStageButton.title = 'Refresh Entry Data';
+            syncStageButton.innerHTML = `<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>`;
+            syncStageButton.onclick = () => {
+                const svgIcon = syncStageButton.querySelector('svg');
+                if (svgIcon) svgIcon.classList.add('rotate-animate');
+                setButtonLoadingOffboarding(true, syncStageButton);
+                fetchEntriesOffboarding().then(() => {
+                    const updatedEntry = allEntriesOffboarding.find(e => e.UID === entry.UID);
+                    if (updatedEntry) {
+                        populateDetailsModalOffboarding(updatedEntry);
+                        detailsModalSubtitleOffboarding.textContent = `Resignation: ${formatDateForDisplay(updatedEntry['Date of resignation'])} - Relieving: ${formatDateForDisplay(updatedEntry['Date of relieving'])} - Status: ${updatedEntry.status || determineOffboardingStatus(updatedEntry)}`;
+                        showUserAlertOffboarding("Entry details refreshed!", "success");
+                    } else {
+                        closeModalOffboarding(entryDetailsModalOffboarding);
+                        showUserAlertOffboarding('Entry details may have changed or an error occurred during refresh.', 'info');
+                    }
+                }).catch(err => {
+                    showUserAlertOffboarding('Error refreshing details: ' + err.message, 'error');
+                }).finally(() => {
+                    if (svgIcon) svgIcon.classList.remove('rotate-animate');
+                    setButtonLoadingOffboarding(false, syncStageButton);
+                });
+            };
+            controlsGroup.appendChild(syncStageButton);
+
+
+            const newCloseButton = document.createElement('button');
+            newCloseButton.className = 'modal-control-button close-btn';
+            newCloseButton.title = 'Close';
+            newCloseButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/></svg>`;
+            newCloseButton.onclick = () => closeModalOffboarding(entryDetailsModalOffboarding);
+            controlsGroup.appendChild(newCloseButton);
+
+             if (modalContentSection) {
+                 modalContentSection.insertBefore(controlsGroup, modalContentSection.firstChild);
+            }
+
+
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'crm-card';
+
+            const overviewTitle = document.createElement('h2');
+            overviewTitle.textContent = 'Employee & Resignation Overview';
+            cardDiv.appendChild(overviewTitle);
+
+            const createSectionItem = (label, value, isHtml = false) => {
+                const item = document.createElement('div'); item.className = 'crm-description-item';
+                const lbl = document.createElement('div'); lbl.className = 'crm-label'; lbl.textContent = label + ':';
+                const val = document.createElement('div'); val.className = 'crm-value';
+                if (isHtml) {
+                    val.innerHTML = value || '<span class="text-gray-400">N/A</span>';
+                } else {
+                    val.textContent = value || 'N/A';
+                }
+                item.append(lbl, val);
+                return item;
+            };
+
+            const mainDetailsSection = document.createElement('div');
+            mainDetailsSection.className = 'crm-section';
+            mainDetailsSection.style.cssText = '--section-color: #c0392b; --section-bg: rgba(192, 57, 43, 0.07);'; // Reddish theme
+            mainDetailsSection.innerHTML = `<div class="crm-section-header"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg><span>Employee Information</span></div><div class="crm-section-content grid grid-cols-1 md:grid-cols-2 gap-x-4"></div>`;
+            const mainContent = mainDetailsSection.querySelector('.crm-section-content');
+
+            mainContent.appendChild(createSectionItem('UID', entry.UID));
+            mainContent.appendChild(createSectionItem('Employee Name', entry['Employee Name']));
+            mainContent.appendChild(createSectionItem('Designation', entry.Designation));
+            mainContent.appendChild(createSectionItem('Timestamp (Initiated)', formatDateForDisplay(entry.Timestamp)));
+            mainContent.appendChild(createSectionItem('Reason for Resignation', entry['Reason for resignation']));
+            mainContent.appendChild(createSectionItem('Date of Resignation', formatDateForDisplay(entry['Date of resignation'])));
+            mainContent.appendChild(createSectionItem('Date of Relieving', formatDateForDisplay(entry['Date of relieving'])));
+            mainContent.appendChild(createSectionItem('Step Code', entry['Step Code']));
+            mainContent.appendChild(createSectionItem('Current Status', entry.status || determineOffboardingStatus(entry)));
+
+            cardDiv.appendChild(mainDetailsSection);
+
+            const stageProcessingSection = document.createElement('div');
+            stageProcessingSection.className = 'details-section mt-6';
+            const stageProcessingTitle = document.createElement('h3');
+            stageProcessingTitle.textContent = 'Offboarding Stage Processing';
+            stageProcessingSection.appendChild(stageProcessingTitle);
+
+            const currentOverallStatus = entry.status || determineOffboardingStatus(entry);
+            let actionButtonAddedForCurrentPendingStage = false;
+
+            OFFBOARDING_STAGES.forEach((stage, index) => {
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'timeline-step';
+
+                stageDiv.innerHTML = `<strong>${stage.name}</strong>
+                                   <div class="timeline-details-grid mt-2">
+                                     ${createSectionItem('Planned', formatDateForDisplay(entry[stage.plannedKey])).outerHTML}
+                                     ${createSectionItem('Actual', formatDateForDisplay(entry[stage.actualKey])).outerHTML}
+                                     ${createSectionItem('Time Delay', calculateTimeDelayOffboarding(entry[stage.actualKey], entry[stage.plannedKey]), true).outerHTML}
+                                   </div>`;
+
+                const isStageCompleted = !!entry[stage.actualKey] && entry[stage.actualKey] !== "N/A" && String(entry[stage.actualKey]).trim() !== "";
+                let canTakeAction = !isStageCompleted;
+                if (index > 0) {
+                    const prevStage = OFFBOARDING_STAGES[index - 1];
+                    if (!entry[prevStage.actualKey] || entry[prevStage.actualKey] === "N/A" || String(entry[prevStage.actualKey]).trim() === "") {
+                        canTakeAction = false; // Previous stage must be completed
+                    }
+                }
+                const isProcessFinal = [STATUS_MAP_OFFBOARDING.FNF_COMPLETED, STATUS_MAP_OFFBOARDING.OFFBOARDING_CANCELLED].includes(currentOverallStatus);
+
+                if (canTakeAction && !actionButtonAddedForCurrentPendingStage && !isProcessFinal) {
+                     const actionButtonContainer = document.createElement('div');
+                     actionButtonContainer.className = 'action-button-group';
+                     const actionButton = document.createElement('button');
+                     actionButton.textContent = stage.buttonText;
+                     actionButton.className = 'btn btn-success btn-take-action';
+                     actionButton.onclick = () => {
+                        openStageActionModalOffboarding(entry, stage, index);
+                     };
+                     actionButtonContainer.appendChild(actionButton);
+                     stageDiv.appendChild(actionButtonContainer);
+                     actionButtonAddedForCurrentPendingStage = true;
+                }
+                stageProcessingSection.appendChild(stageDiv);
+            });
+
+            cardDiv.appendChild(stageProcessingSection);
+            detailsModalContentOffboarding.appendChild(cardDiv);
+        }
+
+
+        async function fetchEntriesOffboarding() {
+            tableStatusOffboarding.textContent = 'Loading entries...';
+            tableStatusOffboarding.classList.remove('hidden');
+            entriesTableBodyOffboarding.innerHTML = '';
+            paginationControlsOffboarding.innerHTML = '';
+            const entranceOverlay = document.getElementById('entranceAnimationOverlay');
+
+
+            if (API_ENDPOINT_URL_OFFBOARDING.includes('YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE')) { // Placeholder for testing
+                console.warn("API_ENDPOINT_URL_OFFBOARDING is a placeholder. Using local demo data.");
+                if (allEntriesOffboarding.length === 0) {
+                    const now = new Date();
+                    const baseTime = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+                    allEntriesOffboarding = [
+                        {
+                            "Timestamp": formatDateForInput(addDays(baseTime, 0)),
+                            "Employee Name": "Andy Bernard",
+                            "Designation": "Manager",
+                            "Reason for resignation": "relocating",
+                            "Date of resignation": formatDateForDisplay(addDays(baseTime, 0)), // Date only
+                            "Date of relieving": formatDateForDisplay(addDays(baseTime, 30)), // Date only
+                            "UID": "OB1",
+                            "Step Code": "OB1_F7",
+                            "Take Action (Reason Clarification)": "Discuss with Andy",
+                            "Reason Clarification Planned": formatDateForInput(addDays(baseTime, 1)),
+                            "Reason Clarification Actual": null, //formatDateForInput(addDays(baseTime, 2)),
+                            "Reason Clarification Time Delay": null, //"1 day(s) late",
+                            "Take Action (Exit Interview)": "Schedule Exit Interview with HR",
+                            "Exit Interview Planned": formatDateForInput(addDays(baseTime, 15)),
+                            "Exit Interview Actual": null,
+                            "Exit Interview Time Delay": null,
+                            // ... other fields can be null or empty initially
+                        },
+                        {
+                            "Timestamp": formatDateForInput(addDays(baseTime, -5)),
+                            "Employee Name": "Pam Beesly",
+                            "Designation": "Receptionist",
+                            "Reason for resignation": "career change",
+                            "Date of resignation": formatDateForDisplay(addDays(baseTime, -5)),
+                            "Date of relieving": formatDateForDisplay(addDays(baseTime, 25)),
+                            "UID": "OB2",
+                            "Step Code": "OB2_F1",
+                            "Take Action (Reason Clarification)": "",
+                            "Reason Clarification Planned": formatDateForInput(addDays(baseTime, -4)),
+                            "Reason Clarification Actual": formatDateForInput(addDays(baseTime, -4)),
+                            "Reason Clarification Time Delay": "On Time",
+                            "Take Action (Exit Interview)": "https://docs.google.com/forms/d/e/YOUR_FORM_ID_HERE/viewform", // Example form
+                            "Exit Interview Planned": formatDateForInput(addDays(baseTime, 10)),
+                            "Exit Interview Actual": null,
+                            "Exit Interview Time Delay": null,
+                        }
+                    ];
+                }
+            } else { // Actual fetch
+                try {
+                    const res = await fetch(`${API_ENDPOINT_URL_OFFBOARDING}?action=getEntries&cachebust=${new Date().getTime()}`);
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Failed to fetch: ${res.status} ${res.statusText} - ${errorText}`);
+                    }
+                    const result = await res.json();
+
+                    let dataToProcess = [];
+                    if (result && result.success && Array.isArray(result.data)) {
+                        dataToProcess = result.data;
+                    } else if (Array.isArray(result)) { // Handle direct array response from Apps Script
+                        console.warn("Apps Script returned a direct array. Expected {success: true, data: [...]}. Adapting...");
+                        dataToProcess = result;
+                    }
+                     else {
+                        tableStatusOffboarding.textContent = 'Error fetching entries: '+(result.message ||'Invalid data format received.');
+                        showUserAlertOffboarding('Error fetching entries: '+(result.message ||'Invalid data format received.'),'error');
+                        if(entranceOverlay) entranceOverlay.classList.add('hidden');
+                        return;
+                    }
+                    allEntriesOffboarding = dataToProcess;
+                } catch (e) {
+                    console.error('Error fetching entries:', e);
+                    tableStatusOffboarding.textContent = 'Failed to load entries. Check console, API URL, and script permissions.';
+                    showUserAlertOffboarding('Network error while fetching entries: '+e.message,'error');
+                    if(entranceOverlay) entranceAnimationOverlay.classList.add('hidden');
+                    return;
+                }
+            }
+
+            allEntriesOffboarding.forEach(entry => entry.status = determineOffboardingStatus(entry));
+            allEntriesOffboarding.sort((a, b) => { // Sort by Timestamp (initiation) descending
+                const dateA = parseFlexibleDateOffboarding(a.Timestamp);
+                const dateB = parseFlexibleDateOffboarding(b.Timestamp);
+                if (!dateA && !dateB) return 0;
+                if (!dateA) return 1;
+                if (!dateB) return -1;
+                return dateB - dateA;
+            });
+
+            currentlyDisplayedEntriesOffboarding = [...allEntriesOffboarding];
+            applyFiltersAndSearchOffboarding();
+            tableStatusOffboarding.classList.toggle('hidden', allEntriesOffboarding.length > 0);
+
+            if (allEntriesOffboarding.length === 0 && !API_ENDPOINT_URL_OFFBOARDING.includes('YOUR_GOOGLE_APPS_SCRIPT')) tableStatusOffboarding.textContent = 'No entries found.';
+            else if (allEntriesOffboarding.length === 0) tableStatusOffboarding.textContent = 'No entries (demo).';
+
+
+            if(entranceOverlay) entranceAnimationOverlay.classList.add('hidden');
+        }
+
+        function populateFilterDropdownsOffboarding() {
+            statusFilterOffboarding.innerHTML = '<option value="">All Statuses</option>';
+            Object.values(STATUS_MAP_OFFBOARDING).forEach(statusVal => {
+                if (statusVal) {
+                    const option = document.createElement('option');
+                    option.value = statusVal;
+                    option.textContent = statusVal;
+                    statusFilterOffboarding.appendChild(option);
+                }
+            });
+        }
+
+
+        function applyFiltersAndSearchOffboarding() {
+            let filtered = [...allEntriesOffboarding];
+            const searchTerm = searchInputOffboarding.value.toLowerCase().trim();
+            const selectedStatus = statusFilterOffboarding.value;
+            const startDateVal = dateStartFilterOffboarding.value; // Using Date of Resignation for filtering
+            const endDateVal = dateEndFilterOffboarding.value;   // Using Date of Resignation for filtering
+            const selectedActionStatus = actionStatusFilterOffboarding.value;
+
+            let startDate = null;
+            if (startDateVal) {
+                startDate = new Date(startDateVal);
+                startDate.setHours(0,0,0,0);
+            }
+            let endDate = null;
+            if (endDateVal) {
+                endDate = new Date(endDateVal);
+                endDate.setHours(23,59,59,999);
+            }
+
+            if (searchTerm || selectedStatus || startDate || endDate || selectedActionStatus) {
+                filtered = filtered.filter(entry => {
+                    const searchMatch = !searchTerm || (
+                        String(entry.UID).toLowerCase().includes(searchTerm) ||
+                        String(entry['Employee Name']).toLowerCase().includes(searchTerm) ||
+                        String(entry.Designation).toLowerCase().includes(searchTerm) ||
+                        String(entry['Reason for resignation']).toLowerCase().includes(searchTerm)
+                    );
+
+                    const statusMatch = !selectedStatus || (entry.status || determineOffboardingStatus(entry)) === selectedStatus;
+
+                    let dateMatch = true; // Based on 'Date of resignation'
+                    const entryResignationDateStr = entry['Date of resignation'];
+                    if (entryResignationDateStr) {
+                        const entryDate = parseFlexibleDateOffboarding(entryResignationDateStr);
+                         if (entryDate && !isNaN(entryDate.getTime())) {
+                            if (startDate && entryDate < startDate) dateMatch = false;
+                            if (endDate && entryDate > endDate) dateMatch = false;
+                        } else { // If resignation date is invalid, it won't match date filters
+                            if (startDate || endDate) dateMatch = false;
+                        }
+                    } else if (startDate || endDate) { // If no resignation date, it won't match date filters
+                         dateMatch = false;
+                    }
+
+
+                    let actionStatusMatch = true;
+                    if (selectedActionStatus) {
+                        const plannedActionInfo = getNextPlannedActionTimestampOffboarding(entry);
+                        if (plannedActionInfo.date) {
+                            const today = new Date(); today.setHours(0,0,0,0);
+                            const sevenDaysFromNow = new Date(today); sevenDaysFromNow.setDate(today.getDate() + 7);
+
+                            if (selectedActionStatus === 'overdue') {
+                                actionStatusMatch = plannedActionInfo.isOverdue;
+                            } else if (selectedActionStatus === 'upcoming') {
+                                actionStatusMatch = plannedActionInfo.date >= today && plannedActionInfo.date <= sevenDaysFromNow && !plannedActionInfo.isOverdue;
+                            }
+                        } else {
+                            actionStatusMatch = false; // No planned action, so doesn't match "overdue" or "upcoming"
+                        }
+                    }
+                    return searchMatch && statusMatch && dateMatch && actionStatusMatch;
+                });
+            }
+            currentlyDisplayedEntriesOffboarding = filtered;
+            currentPageOffboarding = 1;
+            renderTableOffboarding(currentlyDisplayedEntriesOffboarding);
+        }
+
+
+        function renderTableOffboarding(entriesToRender) {
+            entriesTableBodyOffboarding.innerHTML = '';
+            paginationControlsOffboarding.innerHTML = '';
+            renderScorecardsOffboarding(allEntriesOffboarding);
+
+            tableStatusOffboarding.classList.toggle('hidden', entriesToRender.length > 0);
+            if (entriesToRender.length === 0) {
+                 if (allEntriesOffboarding.length > 0 && (searchInputOffboarding.value || statusFilterOffboarding.value || dateStartFilterOffboarding.value || dateEndFilterOffboarding.value || actionStatusFilterOffboarding.value)) {
+                    tableStatusOffboarding.textContent = 'No entries match your filters.';
+                } else if (allEntriesOffboarding.length === 0 && !API_ENDPOINT_URL_OFFBOARDING.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
+                    tableStatusOffboarding.textContent = 'No entries found from the source.';
+                } else if (allEntriesOffboarding.length === 0) {
+                     tableStatusOffboarding.textContent = 'No entries available (or in demo mode).';
+                }
+            }
+
+
+            const paginatedEntries = entriesToRender.slice((currentPageOffboarding-1)*ITEMS_PER_PAGE_OFFBOARDING, (currentPageOffboarding-1)*ITEMS_PER_PAGE_OFFBOARDING + ITEMS_PER_PAGE_OFFBOARDING);
+
+            paginatedEntries.forEach((entry, idx) => {
+                const row = entriesTableBodyOffboarding.insertRow();
+                row.className = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-gray-100 transition-colors duration-150';
+
+                tableHeadersConfigOffboarding.forEach(hConfig => {
+                    if (hConfig.key === 'actions') return;
+
+                    const cell = row.insertCell();
+                    let cellValue;
+                    let cellHtml = '';
+                    let isOverdue = false;
+
+
+                    if (hConfig.customRender) {
+                        const renderResult = hConfig.customRender(entry);
+                        cellValue = renderResult.text || 'N/A';
+                        isOverdue = renderResult.isOverdue || false;
+                    } else if (hConfig.key === 'status') {
+                        cellValue = entry.status || determineOffboardingStatus(entry);
+                    } else {
+                        cellValue = entry[hConfig.key];
+                        cellValue = (hConfig.isDate && cellValue) ? formatDateForDisplay(cellValue) : (cellValue || 'N/A');
+                    }
+
+                    if (hConfig.key === 'status') {
+                        let statusClass = 'status-default';
+                        if (STATUS_MAP_OFFBOARDING.PENDING_REASON_CLARIFICATION === cellValue) statusClass = 'status-pending-reason-clarification';
+                        else if (STATUS_MAP_OFFBOARDING.PENDING_EXIT_INTERVIEW === cellValue) statusClass = 'status-pending-exit-interview';
+                        else if (STATUS_MAP_OFFBOARDING.PENDING_RESIGNATION_APPROVAL === cellValue) statusClass = 'status-pending-resignation-approval';
+                        else if (STATUS_MAP_OFFBOARDING.PENDING_ROLE_TRANSFER === cellValue) statusClass = 'status-pending-role-transfer';
+                        else if (STATUS_MAP_OFFBOARDING.PENDING_ASSET_HANDOVER === cellValue) statusClass = 'status-pending-asset-handover';
+                        else if (STATUS_MAP_OFFBOARDING.PENDING_DOCUMENTATION === cellValue) statusClass = 'status-pending-documentation';
+                        else if (STATUS_MAP_OFFBOARDING.PENDING_FNF === cellValue) statusClass = 'status-pending-fnf';
+                        else if (STATUS_MAP_OFFBOARDING.FNF_COMPLETED === cellValue) statusClass = 'status-fnf-completed';
+                        cellHtml = `<span class="status-badge ${statusClass}">${cellValue}</span>`;
+                    } else if (isOverdue) {
+                        cellHtml = `<span class="overdue-task">${cellValue}</span>`;
+                    }
+                    else {
+                        cellHtml = cellValue;
+                    }
+                    cell.innerHTML = cellHtml;
+                    cell.setAttribute('data-label',hConfig.label);
+                    cell.className='px-3 py-2 text-xs text-gray-700';
+                });
+
+                const actionsCell = row.insertCell();
+                actionsCell.setAttribute('data-label','Actions');
+                actionsCell.className='px-3 py-2 whitespace-nowrap text-xs text-gray-700 text-right md:text-left flex items-center justify-end md:justify-start space-x-1';
+
+                const viewButton = document.createElement('button');
+                viewButton.className = 'btn btn-info btn-xs p-1.5 btn-icon-only';
+                viewButton.title = 'View Details';
+                viewButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>`;
+                viewButton.onclick = () => openEntryDetailsModalOffboarding(entry.UID);
+                actionsCell.appendChild(viewButton);
+            });
+            renderPaginationControlsOffboarding(entriesToRender.length);
+        }
+
+        function getNextPlannedActionTimestampOffboarding(entry) {
+            const currentStatus = entry.status || determineOffboardingStatus(entry);
+            let plannedTimestampStr = 'N/A';
+            let isOverdue = false;
+            const now = new Date(); now.setHours(0,0,0,0); // Compare against start of today
+            let relevantPlannedKey = '';
+            let dateObject = null;
+
+            // Find the first non-completed stage
+            for (const stage of OFFBOARDING_STAGES) {
+                if (!entry[stage.actualKey] || entry[stage.actualKey] === "N/A" || String(entry[stage.actualKey]).trim() === "") {
+                    relevantPlannedKey = stage.plannedKey;
+                    break;
+                }
+            }
+
+            // If all stages are complete or process is final, no next planned action
+            if (!relevantPlannedKey || [STATUS_MAP_OFFBOARDING.FNF_COMPLETED, STATUS_MAP_OFFBOARDING.OFFBOARDING_CANCELLED].includes(currentStatus)) {
+                return { text: 'N/A', isOverdue: false, date: null };
+            }
+
+            if (entry[relevantPlannedKey] && String(entry[relevantPlannedKey]).trim() !== "" && entry[relevantPlannedKey] !== "N/A" && entry[relevantPlannedKey] !== "SKIPPED") {
+                const plannedDate = parseFlexibleDateOffboarding(entry[relevantPlannedKey]);
+                if (plannedDate && !isNaN(plannedDate.getTime())) {
+                    dateObject = plannedDate;
+                    plannedTimestampStr = formatDateForDisplay(plannedDate); // Use full display for tooltip/details
+                    // For overdue check, compare only dates (ignore time part of plannedDate if it's there)
+                    const plannedDateOnly = new Date(plannedDate); plannedDateOnly.setHours(0,0,0,0);
+                    if (plannedDateOnly < now) {
+                        isOverdue = true;
+                    }
+                } else {
+                    plannedTimestampStr = String(entry[relevantPlannedKey]); // If not a valid date, show as is
+                }
+            }
+            return { text: plannedTimestampStr, isOverdue: isOverdue, date: dateObject };
+        }
+
+
+        function renderPaginationControlsOffboarding(totalItemsInCurrentView) {
+            paginationControlsOffboarding.innerHTML='';
+            const totalPages = Math.ceil(totalItemsInCurrentView / ITEMS_PER_PAGE_OFFBOARDING);
+            if(totalPages <= 1) return;
+
+            const createButton = (text, pageNum, isDisabled = false) => {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.className = `btn btn-secondary text-sm px-2 py-1 sm:px-3 sm:py-1.5 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300'}`;
+                btn.disabled = isDisabled;
+                btn.onclick = () => {
+                    currentPageOffboarding = pageNum;
+                    renderTableOffboarding(currentlyDisplayedEntriesOffboarding);
+                };
+                return btn;
+            };
+
+            paginationControlsOffboarding.appendChild(createButton('Previous', currentPageOffboarding - 1, currentPageOffboarding === 1));
+
+            const maxPagesToShow = 5;
+            let startPage, endPage;
+            if (totalPages <= maxPagesToShow) {
+                startPage = 1;
+                endPage = totalPages;
+            } else {
+                const maxPagesBeforeCurrent = Math.floor(maxPagesToShow / 2);
+                const maxPagesAfterCurrent = Math.ceil(maxPagesToShow / 2) - 1;
+                if (currentPageOffboarding <= maxPagesBeforeCurrent) {
+                    startPage = 1;
+                    endPage = maxPagesToShow;
+                } else if (currentPageOffboarding + maxPagesAfterCurrent >= totalPages) {
+                    startPage = totalPages - maxPagesToShow + 1;
+                    endPage = totalPages;
+                } else {
+                    startPage = currentPageOffboarding - maxPagesBeforeCurrent;
+                    endPage = currentPageOffboarding + maxPagesAfterCurrent;
+                }
+            }
+
+            if (startPage > 1) {
+                paginationControlsOffboarding.appendChild(createButton('1', 1));
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.className = 'px-2 py-1 text-sm text-gray-500';
+                    paginationControlsOffboarding.appendChild(dots);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = createButton(i, i, i === currentPageOffboarding);
+                if (i === currentPageOffboarding) {
+                    pageButton.classList.remove('btn-secondary', 'hover:bg-gray-300');
+                    pageButton.classList.add('btn-primary', 'cursor-default');
+                }
+                paginationControlsOffboarding.appendChild(pageButton);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                     const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.className = 'px-2 py-1 text-sm text-gray-500';
+                    paginationControlsOffboarding.appendChild(dots);
+                }
+                paginationControlsOffboarding.appendChild(createButton(totalPages, totalPages));
+            }
+
+            paginationControlsOffboarding.appendChild(createButton('Next', currentPageOffboarding + 1, currentPageOffboarding === totalPages));
+
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = `Page ${currentPageOffboarding} of ${totalPages}`;
+            pageInfo.className = 'px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hidden sm:inline';
+            if (paginationControlsOffboarding.children.length > 2) {
+                 paginationControlsOffboarding.insertBefore(pageInfo, paginationControlsOffboarding.children[Math.floor(paginationControlsOffboarding.children.length/2)]);
+            } else {
+                paginationControlsOffboarding.appendChild(pageInfo);
+            }
+        }
+
+
+        function updateDateTimeOffboarding() {
+            const dateTimeDisplay = document.getElementById('dateTimeDisplayOffboarding');
+            if (dateTimeDisplay) {
+                const now = new Date();
+                const options = {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: true
+                };
+                dateTimeDisplay.textContent = now.toLocaleString('en-US', options);
+            }
+        }
+
+    </script>
+</body>
+</html>
